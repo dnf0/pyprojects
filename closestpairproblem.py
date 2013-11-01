@@ -40,10 +40,6 @@ def show_3d(r_pts, closest):
         
           
 def get_closest_pair(r_pts):
-    '''distances between all dimensions is computed using cKDTree.
-       once coprint 'please enter number of random points: '
-    n_points = int(raw_input())
-    '''
     
     #make kdtree and self compare
     tree = spatial.cKDTree(r_pts)
