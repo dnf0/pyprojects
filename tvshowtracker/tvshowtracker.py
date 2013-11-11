@@ -59,7 +59,7 @@ class Database(object):
 class WebCrawler():
     
     def __init__(self):
-        default_settings.ITEM_PIPELINES = 'pipelines.JsonExportPipeline' #EDIT THIS TO PICKLE OR WORK OUT JSON
+        default_settings.ITEM_PIPELINES = 'pipelines.JsonExportPipeline'
         self.crawler = Crawler(Settings())
         self.crawler.signals.connect(reactor.stop, signal=signals.spider_closed)
         self.crawler.configure()
