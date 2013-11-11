@@ -171,8 +171,8 @@ def main():
             
             current_day = datetime.datetime.now().day
             
-        #sleep for some time
-        time.sleep(36000)
+        #sleep for an hour
+        time.sleep(3600)
         
         #TODO implement a process to kill the app
 
