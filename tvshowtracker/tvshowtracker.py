@@ -2,8 +2,8 @@
 UK TV show tracker.
 
 Extracts information from tvguide.co.uk and for user selected shows
-sends a daily email reminder letting the user know if the one of the
-selected shows is on for the given day.
+sends a reminder to the user 10 minutes (or so) before the show 
+commences
 
 Uses postgresql for the database and scrapy for retrieving the data
 from the webpage.  
