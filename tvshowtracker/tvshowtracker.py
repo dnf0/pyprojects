@@ -94,10 +94,9 @@ class Mailer(object):
         
 class ChannelTracker(object):
     
-    def __init__(self, database, webcrawler, mailer, shows):
+    def __init__(self, database, webcrawler, shows):
         self.database = database 
         self.webcrawler = webcrawler
-        self.mailer = mailer
         self.shows = shows 
         
     def update_channels(self, now):
@@ -109,18 +108,25 @@ class ChannelTracker(object):
             self.webcrawler.run(url=url) #run is multithreaded
             self.database.update()
                              
-    def todays_shows(self):
+    def get_show_list(self):
+        show_list = []
         if len(self.shows) != 0:
             for selected_show in self.shows:
-                show_list = self.database.query(selected_show)
-                if show_list != None:
-                    show_list = self._remove_duplicates(show_list)
-                    for each_show in show_list:
-                        self._send_alert(each_show)
-                        
-    def _remove_duplicates(self, show_list):
-        return list(set(show_list))
-                    
+                are_shows = self.database.query(selected_show)
+                if are_shows != None:
+                    for show in are_shows:
+                        show_list.append(show)
+        
+        #remove duplicates
+        show_list = self._remove_duplicates(show_list) 
+        
+        #sort list by time
+        show_list = sorted(show_list, key = lambda x : (x[2]))           
+        
+        #return reversed list so earliest time is last
+        show_list.reverse()
+        return show_list
+    
     def _get_urls(self, now):
         url_list = []
         base_url = 'http://www.tvguide.co.uk/?systemid=&thistime=%s&thisday=%s&ProgrammeTypeID=&gridSpan=06:00&catColor='
@@ -129,14 +135,11 @@ class ChannelTracker(object):
         date = str(now.month) + '/' + str(now.day) + '/' + str(now.year)
         for hour in ['1','7','13','19']:
             url_list.append(base_url % (hour,date))
-    
         return url_list
                     
-    def _send_alert(self, show_info): 
-        msg = show_info[0] + ' is starting at ' + str(show_info[2]) + ' on ' + show_info[1]  
-        self.mailer.send_mail(body=msg)
-                 
-    
+    def _remove_duplicates(self, show_list):
+        return list(set(show_list))
+                                                 
 def main():
 
     #parse the user info.  
@@ -154,26 +157,46 @@ def main():
     database = Database()
     webcrawler = WebCrawler()
     mailer = Mailer(mail_info, mail_info, mail_info, passwd)
-    tracker = ChannelTracker(database, webcrawler, mailer, shows)
+    tracker = ChannelTracker(database, webcrawler, shows)
     
     #preset current day
-    current_day = (datetime.datetime.now() - datetime.timedelta(1)).day
+    current_day = datetime.datetime.now().day 
+    
+    #set time delta for show reminders
+    d = datetime.timedelta(minutes=10)
     
     #iterate
     while True:
                 
-        #if a new day run the tracker...
-        if datetime.datetime.now().day != current_day:
-            tracker.update_channels(datetime.datetime.now())
+        #populate database
+        tracker.update_channels(datetime.datetime.now())
         
-            #...and check for upcoming shows
-            tracker.todays_shows()
-            
-            current_day = datetime.datetime.now().day
-            
-        #sleep for an hour
-        time.sleep(3600)
+        #extract shows from database
+        show_list = tracker.get_show_list()
         
+        #...and check for upcoming shows
+        while datetime.datetime.now().day == current_day:
+            
+            #get next show
+            next_show = show_list.pop()
+            show_time = datetime.datetime.now().replace(hour=next_show[2].hour, minute=next_show[2].minute)
+            
+            while True:
+                now = datetime.datetime.now()
+                #check to see if show missed
+                if show_time < now:
+                    break
+                #Check to see if show in less than 10 mins:
+                if show_time - now < d:
+                    msg = next_show[0] + ' is starting at ' + str(next_show[2]) + ' on ' + next_show[1]  
+                    mailer.send_mail(body=msg)
+                    break
+                #check for show every five minutes
+                time.sleep(180)
+                
+        #update day
+        current_day = datetime.datetime.now().day
+            
         #TODO implement a process to kill the app
 
 if __name__ == '__main__':
