@@ -177,6 +177,13 @@ def main():
         #...and check for upcoming shows
         while datetime.datetime.now().day == current_day:
             
+            #see if shows left in show_list
+            if len(show_list)==0:
+                
+                #if not sleep for an hour and then continue loop
+                time.sleep(3600)
+                continue
+                
             #get next show
             next_show = show_list.pop()
             show_time = datetime.datetime.now().replace(hour=next_show[2].hour, minute=next_show[2].minute)
