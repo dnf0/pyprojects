@@ -105,7 +105,7 @@ class ChannelTracker(object):
         
         #crawl and insert crawled data into db
         for url in self._get_urls(now):
-            self.webcrawler.run(url=url) #run is multithreaded
+            self.webcrawler.run(url=url) 
             self.database.update()
                              
     def get_show_list(self):
